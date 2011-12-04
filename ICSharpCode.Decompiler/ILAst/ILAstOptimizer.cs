@@ -55,6 +55,7 @@ namespace ICSharpCode.Decompiler.ILAst
         IntroducePostIncrement,
         InlineVariables2,
         FindDynamicCallSites,
+        DeoptimizeSwitches,
         FindLoops,
         FindConditions,
         FlattenNestedMovableBlocks,
@@ -187,6 +188,11 @@ namespace ICSharpCode.Decompiler.ILAst
                 do {
                     modified = block.RunOptimization(dcs.AnalyzeInstructions);
                 } while (modified);
+            }
+            
+            if (abortBeforeStep == ILAstOptimizationStep.DeoptimizeSwitches) return;
+            foreach(ILBlock block in method.GetSelfAndChildrenRecursive<ILBlock>()) {
+                new SwitchDeoptimizer(context).DeoptimizeSwitches(block);
             }
             
             if (abortBeforeStep == ILAstOptimizationStep.FindLoops) return;

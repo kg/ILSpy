@@ -179,9 +179,23 @@ namespace ICSharpCode.Decompiler.Ast
 				foreach (var caseBlock in ilSwitch.CaseBlocks) {
 					SwitchSection section = new SwitchSection();
 					if (caseBlock.Values != null) {
-						section.CaseLabels.AddRange(caseBlock.Values.Select(i => new CaseLabel() { Expression = AstBuilder.MakePrimitive(i, ilSwitch.Condition.InferredType) }));
-					} else {
-						section.CaseLabels.Add(new CaseLabel());
+						section.CaseLabels.AddRange(
+                            caseBlock.Values.Select(
+                                i => new CaseLabel() { 
+                                    Expression = AstBuilder.MakePrimitive(i, ilSwitch.Condition.InferredType) 
+                                }
+                            )
+                        );
+					} else if (caseBlock.ExtendedValues != null) {
+                        section.CaseLabels.AddRange(
+                            caseBlock.ExtendedValues.Select(
+                                ev => new CaseLabel() {
+                                    Expression = (Expression) TransformExpression(ev)
+                                }
+                            )
+                        );
+                    } else {
+				        section.CaseLabels.Add(new CaseLabel());
 					}
 					section.Statements.Add(TransformBlock(caseBlock));
 					switchStmt.SwitchSections.Add(section);

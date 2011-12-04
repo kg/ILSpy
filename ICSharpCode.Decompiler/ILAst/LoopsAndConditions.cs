@@ -77,10 +77,10 @@ namespace ICSharpCode.Decompiler.ILAst
 			labelToCfNode = new Dictionary<ILLabel, ControlFlowNode>();
 			Dictionary<ILNode, ControlFlowNode> astNodeToCfNode = new Dictionary<ILNode, ControlFlowNode>();
 			foreach(ILBasicBlock node in nodes) {
-				ControlFlowNode cfNode = new ControlFlowNode(index++, -1, ControlFlowNodeType.Normal);
-				cfNodes.Add(cfNode);
-				astNodeToCfNode[node] = cfNode;
-				cfNode.UserData = node;
+                ControlFlowNode cfNode = new ControlFlowNode(index++, -1, ControlFlowNodeType.Normal);
+                cfNodes.Add(cfNode);
+                astNodeToCfNode[node] = cfNode;
+                cfNode.UserData = node;
 				
 				// Find all contained labels
 				foreach(ILLabel label in node.GetSelfAndChildrenRecursive<ILLabel>()) {
@@ -96,19 +96,40 @@ namespace ICSharpCode.Decompiler.ILAst
 			
 			// Create edges
 			foreach(ILBasicBlock node in nodes) {
-				ControlFlowNode source = astNodeToCfNode[node];
+                ControlFlowNode source = astNodeToCfNode[node];
 				
 				// Find all branches
-				foreach(ILLabel target in node.GetSelfAndChildrenRecursive<ILExpression>(e => e.IsBranch()).SelectMany(e => e.GetBranchTargets())) {
+				foreach(
+                    ILLabel target in node.GetSelfAndChildrenRecursive<ILExpression>(
+                        e => e.IsBranch()
+                    ).SelectMany(
+                        e => e.GetBranchTargets()
+                    )
+                ) {
 					ControlFlowNode destination;
 					// Labels which are out of out scope will not be int the collection
 					// Insert self edge only if we are sure we are a loop
-					if (labelToCfNode.TryGetValue(target, out destination) && (destination != source || target == node.Body.FirstOrDefault())) {
+					if (
+                        labelToCfNode.TryGetValue(target, out destination) && 
+                        (destination != source || target == node.Body.FirstOrDefault())
+                    ) {
 						ControlFlowEdge edge = new ControlFlowEdge(source, destination, JumpType.Normal);
 						source.Outgoing.Add(edge);
 						destination.Incoming.Add(edge);
 					}
 				}
+
+                // Find switches
+                foreach (
+                    ILSwitch swtch in node.GetSelfAndChildrenRecursive<ILSwitch>()
+                ) {
+                    foreach (var cb in swtch.CaseBlocks) {
+                        ControlFlowNode destination = labelToCfNode[(ILLabel)cb.EntryGoto.Operand];
+                        ControlFlowEdge edge = new ControlFlowEdge(source, destination, JumpType.Normal);
+                        source.Outgoing.Add(edge);
+                        destination.Incoming.Add(edge);
+                    }
+                }
 			}
 			
 			return new ControlFlowGraph(cfNodes.ToArray());

@@ -91,7 +91,7 @@ namespace ICSharpCode.Decompiler.ILAst
 					}
 				}
 				
-				var defaultCase = ilSwitch.CaseBlocks.SingleOrDefault(cb => cb.Values == null);
+				var defaultCase = ilSwitch.CaseBlocks.SingleOrDefault(cb => (cb.Values == null) && (cb.ExtendedValues == null));
 				// If there is no default block, remove empty case blocks
 				if (defaultCase == null || (defaultCase.Body.Count == 1 && defaultCase.Body.Single().Match(ILCode.LoopOrSwitchBreak))) {
 					ilSwitch.CaseBlocks.RemoveAll(b => b.Body.Count == 1 && b.Body.Single().Match(ILCode.LoopOrSwitchBreak));

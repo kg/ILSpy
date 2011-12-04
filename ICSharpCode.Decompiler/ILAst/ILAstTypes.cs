@@ -520,12 +520,17 @@ namespace ICSharpCode.Decompiler.ILAst
 		public class CaseBlock: ILBlock
 		{
 			public List<int> Values;  // null for the default case
+            public List<ILExpression> ExtendedValues; // Contains any non-integral values for a deoptimized switch
 			
 			public override void WriteTo(ITextOutput output)
 			{
 				if (this.Values != null) {
-					foreach (int i in this.Values) {
-						output.WriteLine("case {0}:", i);
+				    foreach (int i in this.Values) {
+				        output.WriteLine("case {0}:", i);
+				    }
+				} else if (this.ExtendedValues != null) {
+					foreach (var v in this.ExtendedValues) {
+						output.WriteLine("case {0}:", v);
 					}
 				} else {
 					output.WriteLine("default:");
