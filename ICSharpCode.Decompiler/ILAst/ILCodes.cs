@@ -334,6 +334,22 @@ namespace ICSharpCode.Decompiler.ILAst
 		/// assignments to the ParameterExpression variables.
 		/// </summary>
 		ExpressionTreeParameterDeclarations,
+        /// <summary>
+        /// Represents an invocation expression on the target of a dynamic call site.
+        /// </summary>
+        InvokeCallSiteTarget,
+        /// <summary>
+        /// Represents an expression that produces a runtime call site binder. Used as an argument to CreateCallSite.
+        /// </summary>
+        GetCallSiteBinder,
+        /// <summary>
+        /// Represents the creation of a call site and a store into its storage field.
+        /// </summary>
+        CreateCallSite,
+        /// <summary>
+        /// Represents a load of a call site from its storage field.
+        /// </summary>
+        GetCallSite,
 		/// <summary>
 		/// C# 5 await
 		/// </summary>
