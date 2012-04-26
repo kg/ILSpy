@@ -61,14 +61,20 @@ namespace ICSharpCode.Decompiler.ILAst {
         public static bool IsCallSiteStorage (FieldReference field) {
             var declaringType = field.DeclaringType;
 
-            if (
+            bool isMsCallSite = (
                 field.Name.Contains("__Site") &&
                 declaringType.FullName.Contains("__SiteContainer")
-            ) {
-                return true;
-            }
+            );
 
-            return false;
+            bool isMonoCallSite = (
+                field.Name.Contains("Site") &&
+                declaringType.FullName.Contains("__DynamicSite")
+            );
+
+            if (isMsCallSite || isMonoCallSite)
+                return true;
+            else
+                return false;
         }
 
         /// <summary>
