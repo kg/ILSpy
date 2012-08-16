@@ -41,12 +41,17 @@ namespace ICSharpCode.Decompiler.ILAst
 			return result;
 		}
 		
-		void AccumulateSelfAndChildrenRecursive<T>(List<T> list, Func<T, bool> predicate) where T:ILNode
+		internal void AccumulateSelfAndChildrenRecursive<T>(List<T> list, Func<T, bool> predicate) where T:ILNode
 		{
 			// Note: RemoveEndFinally depends on self coming before children
 			T thisAsT = this as T;
 			if (thisAsT != null && (predicate == null || predicate(thisAsT)))
 				list.Add(thisAsT);
+
+			AccumulateChildrenRecursiveInto<T>(list, predicate);
+		}
+
+		protected virtual void AccumulateChildrenRecursiveInto<T> (List<T> list, Func<T, bool> predicate) where T: ILNode {
 			foreach (ILNode node in this.GetChildren()) {
 				if (node != null)
 					node.AccumulateSelfAndChildrenRecursive(list, predicate);
@@ -83,11 +88,20 @@ namespace ICSharpCode.Decompiler.ILAst
 		{
 			this.Body = body;
 		}
+
+        protected override void AccumulateChildrenRecursiveInto<T> (List<T> list, Func<T, bool> predicate) {
+            if (this.EntryGoto != null)
+                this.EntryGoto.AccumulateSelfAndChildrenRecursive(list, predicate);
+
+            foreach (ILNode child in this.Body)
+                child.AccumulateSelfAndChildrenRecursive(list, predicate);
+        }
 		
 		public override IEnumerable<ILNode> GetChildren()
 		{
 			if (this.EntryGoto != null)
 				yield return this.EntryGoto;
+
 			foreach(ILNode child in this.Body) {
 				yield return child;
 			}
@@ -106,7 +120,12 @@ namespace ICSharpCode.Decompiler.ILAst
 	{
 		/// <remarks> Body has to start with a label and end with unconditional control flow </remarks>
 		public List<ILNode> Body = new List<ILNode>();
-		
+
+        protected override void AccumulateChildrenRecursiveInto<T> (List<T> list, Func<T, bool> predicate) {
+            foreach (var child in this.Body)
+                child.AccumulateSelfAndChildrenRecursive(list, predicate);
+        }
+
 		public override IEnumerable<ILNode> GetChildren()
 		{
 			return this.Body;
@@ -349,6 +368,11 @@ namespace ICSharpCode.Decompiler.ILAst
 			}
 			return null;
 		}
+
+        protected override void AccumulateChildrenRecursiveInto<T> (List<T> list, Func<T, bool> predicate) {
+            foreach (var child in Arguments)
+                child.AccumulateSelfAndChildrenRecursive(list, predicate);
+        }
 		
 		public override IEnumerable<ILNode> GetChildren()
 		{
