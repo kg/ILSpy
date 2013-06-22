@@ -962,9 +962,13 @@ namespace ICSharpCode.Decompiler.ILAst
 					return ((ArrayType)member.DeclaringType).ElementType;
 				} else if (gp.Owner.GenericParameterType == GenericParameterType.Method) {
 					return ((GenericInstanceMethod)member).GenericArguments[gp.Position];
-				} else  {
-					return ((GenericInstanceType)member.DeclaringType).GenericArguments[gp.Position];
-				}
+                } else if (member.DeclaringType is GenericInstanceType) {
+                    return ((GenericInstanceType)member.DeclaringType).GenericArguments[gp.Position];
+                } else if (member.DeclaringType is TypeDefinition) {
+                    return ((TypeDefinition)member.DeclaringType).GenericParameters[gp.Position];
+                } else {
+                    throw new NotImplementedException("Member's declaring type was a " + member.DeclaringType.GetType().Name + " when substituting generic parameter " + gp);
+                }
 			}
 			return type;
 		}
