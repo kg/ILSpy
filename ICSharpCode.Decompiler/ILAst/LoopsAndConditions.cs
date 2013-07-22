@@ -128,8 +128,8 @@ namespace ICSharpCode.Decompiler.ILAst
 				
 				// If the node is a loop header
 				if (scope.Contains(node)
-				    && node.DominanceFrontier.Contains(node)
-				    && (node != entryPoint || !excludeEntryPoint))
+					&& node.DominanceFrontier.Contains(node)
+					&& (node != entryPoint || !excludeEntryPoint))
 				{
 					HashSet<ControlFlowNode> loopContents = FindLoopContent(scope, node);
 					
@@ -148,7 +148,7 @@ namespace ICSharpCode.Decompiler.ILAst
 						
 						// If one point inside the loop and the other outside
 						if ((!loopContents.Contains(trueTarget) && loopContents.Contains(falseTarget)) ||
-						    (loopContents.Contains(trueTarget) && !loopContents.Contains(falseTarget)) )
+							(loopContents.Contains(trueTarget) && !loopContents.Contains(falseTarget)) )
 						{
 							loopContents.RemoveOrThrow(node);
 							scope.RemoveOrThrow(node);
@@ -220,31 +220,31 @@ namespace ICSharpCode.Decompiler.ILAst
 			
 			return result;
 		}
-		
+
 		List<ILNode> FindConditions(HashSet<ControlFlowNode> scope, ControlFlowNode entryNode)
 		{
 			List<ILNode> result = new List<ILNode>();
-			
+
 			// Do not modify entry data
 			scope = new HashSet<ControlFlowNode>(scope);
-			
-			Stack<ControlFlowNode> agenda  = new Stack<ControlFlowNode>();
+
+			Stack<ControlFlowNode> agenda = new Stack<ControlFlowNode>();
 			agenda.Push(entryNode);
-			while(agenda.Count > 0) {
+			while (agenda.Count > 0) {
 				ControlFlowNode node = agenda.Pop();
-				
+
 				// Find a block that represents a simple condition
 				if (scope.Contains(node)) {
-					
+
 					ILBasicBlock block = (ILBasicBlock)node.UserData;
-					
+
 					{
 						// Switch
 						ILLabel[] caseLabels;
 						ILExpression switchArg;
 						ILLabel fallLabel;
 						if (block.MatchLastAndBr(ILCode.Switch, out caseLabels, out switchArg, out fallLabel)) {
-							
+
 							// Replace the switch code with ILSwitch
 							ILSwitch ilSwitch = new ILSwitch() { Condition = switchArg };
 							block.Body.RemoveTail(ILCode.Switch, ILCode.Br);
@@ -254,32 +254,32 @@ namespace ICSharpCode.Decompiler.ILAst
 
 							// Remove the item so that it is not picked up as content
 							scope.RemoveOrThrow(node);
-							
+
 							// Find the switch offset
 							int addValue = 0;
 							List<ILExpression> subArgs;
 							if (ilSwitch.Condition.Match(ILCode.Sub, out subArgs) && subArgs[1].Match(ILCode.Ldc_I4, out addValue)) {
 								ilSwitch.Condition = subArgs[0];
 							}
-							
+
 							// Pull in code of cases
 							ControlFlowNode fallTarget = null;
 							labelToCfNode.TryGetValue(fallLabel, out fallTarget);
-							
+
 							HashSet<ControlFlowNode> frontiers = new HashSet<ControlFlowNode>();
 							if (fallTarget != null)
-								frontiers.UnionWith(fallTarget.DominanceFrontier.Except(new [] { fallTarget }));
-							
-							foreach(ILLabel condLabel in caseLabels) {
+								frontiers.UnionWith(fallTarget.DominanceFrontier.Except(new[] { fallTarget }));
+
+							foreach (ILLabel condLabel in caseLabels) {
 								ControlFlowNode condTarget = null;
 								labelToCfNode.TryGetValue(condLabel, out condTarget);
 								if (condTarget != null)
-									frontiers.UnionWith(condTarget.DominanceFrontier.Except(new [] { condTarget }));
+									frontiers.UnionWith(condTarget.DominanceFrontier.Except(new[] { condTarget }));
 							}
-							
+
 							for (int i = 0; i < caseLabels.Length; i++) {
 								ILLabel condLabel = caseLabels[i];
-								
+
 								// Find or create new case block
 								ILSwitch.CaseBlock caseBlock = ilSwitch.CaseBlocks.FirstOrDefault(b => b.EntryGoto.Operand == condLabel);
 								if (caseBlock == null) {
@@ -288,7 +288,7 @@ namespace ICSharpCode.Decompiler.ILAst
 										EntryGoto = new ILExpression(ILCode.Br, condLabel)
 									};
 									ilSwitch.CaseBlocks.Add(caseBlock);
-									
+
 									ControlFlowNode condTarget = null;
 									labelToCfNode.TryGetValue(condLabel, out condTarget);
 									if (condTarget != null && !frontiers.Contains(condTarget)) {
@@ -306,58 +306,66 @@ namespace ICSharpCode.Decompiler.ILAst
 								}
 								caseBlock.Values.Add(i + addValue);
 							}
-							
+
 							// Heuristis to determine if we want to use fallthough as default case
 							if (fallTarget != null && !frontiers.Contains(fallTarget)) {
 								HashSet<ControlFlowNode> content = FindDominatedNodes(scope, fallTarget);
-								if (content.Any()) {
-									var caseBlock = new ILSwitch.CaseBlock() { EntryGoto = new ILExpression(ILCode.Br, fallLabel) };
-									ilSwitch.CaseBlocks.Add(caseBlock);
-									block.Body.RemoveTail(ILCode.Br);
-									
-									scope.ExceptWith(content);
-									caseBlock.Body.AddRange(FindConditions(content, fallTarget));
-									// Add explicit break which should not be used by default, but the goto removal might decide to use it
-									caseBlock.Body.Add(new ILBasicBlock() {
-										Body = {
+								// HACK: content being an empty set doesn't mean that there isn't a default fallthrough.
+								// The fallthrough could be at the end of a block.
+								// if (content.Any()) {
+								var caseBlock = new ILSwitch.CaseBlock() {
+									IsDefault = true,
+									EntryGoto = new ILExpression(ILCode.Br, fallLabel)
+								};
+
+								ilSwitch.CaseBlocks.Add(caseBlock);
+								block.Body.RemoveTail(ILCode.Br);
+
+								scope.ExceptWith(content);
+								caseBlock.Body.AddRange(FindConditions(content, fallTarget));
+								// Add explicit break which should not be used by default, but the goto removal might decide to use it
+								caseBlock.Body.Add(new ILBasicBlock() {
+									Body = {
 											new ILLabel() { Name = "SwitchBreak_" + (nextLabelIndex++) },
 											new ILExpression(ILCode.LoopOrSwitchBreak, null)
 										}
-									});
-								}
+								});
+								// }
 							}
+
+							AnointDefaultSwitchCases(ilSwitch);
 						}
-						
+
 						// Two-way branch
 						ILExpression condExpr;
 						ILLabel trueLabel;
 						ILLabel falseLabel;
-						if(block.MatchLastAndBr(ILCode.Brtrue, out trueLabel, out condExpr, out falseLabel)) {
-							
+						if (block.MatchLastAndBr(ILCode.Brtrue, out trueLabel, out condExpr, out falseLabel)) {
+
 							// Swap bodies since that seems to be the usual C# order
 							ILLabel temp = trueLabel;
 							trueLabel = falseLabel;
 							falseLabel = temp;
 							condExpr = new ILExpression(ILCode.LogicNot, null, condExpr);
-							
+
 							// Convert the brtrue to ILCondition
 							ILCondition ilCond = new ILCondition() {
-								Condition  = condExpr,
-								TrueBlock  = new ILBlock() { EntryGoto = new ILExpression(ILCode.Br, trueLabel) },
+								Condition = condExpr,
+								TrueBlock = new ILBlock() { EntryGoto = new ILExpression(ILCode.Br, trueLabel) },
 								FalseBlock = new ILBlock() { EntryGoto = new ILExpression(ILCode.Br, falseLabel) }
 							};
 							block.Body.RemoveTail(ILCode.Brtrue, ILCode.Br);
 							block.Body.Add(ilCond);
 							result.Add(block);
-							
+
 							// Remove the item immediately so that it is not picked up as content
 							scope.RemoveOrThrow(node);
-							
+
 							ControlFlowNode trueTarget = null;
 							labelToCfNode.TryGetValue(trueLabel, out trueTarget);
 							ControlFlowNode falseTarget = null;
 							labelToCfNode.TryGetValue(falseLabel, out falseTarget);
-							
+
 							// Pull in the conditional code
 							if (trueTarget != null && HasSingleEdgeEnteringBlock(trueTarget)) {
 								HashSet<ControlFlowNode> content = FindDominatedNodes(scope, trueTarget);
@@ -371,7 +379,7 @@ namespace ICSharpCode.Decompiler.ILAst
 							}
 						}
 					}
-					
+
 					// Add the node now so that we have good ordering
 					if (scope.Contains(node)) {
 						result.Add((ILNode)node.UserData);
@@ -384,16 +392,48 @@ namespace ICSharpCode.Decompiler.ILAst
 					agenda.Push(node.DominatorTreeChildren[i]);
 				}
 			}
-			
+
 			// Add whatever is left
-			foreach(var node in scope) {
+			foreach (var node in scope) {
 				result.Add((ILNode)node.UserData);
 			}
-			
+
 			return result;
 		}
-		
-		static bool HasSingleEdgeEnteringBlock(ControlFlowNode node)
+
+		/// <summary>
+		/// Responsible for detecting switch cases with values that are actually also the default case
+		/// </summary>
+		static void AnointDefaultSwitchCases (ILSwitch swtch) {
+			var defaultCase = swtch.CaseBlocks.FirstOrDefault((cse) => cse.IsDefault);
+			if (defaultCase == null)
+				return;
+
+			var lastBlock = defaultCase.Body.LastOrDefault() as ILBasicBlock;
+			if (
+				(lastBlock != null) &&
+				(lastBlock.Body.Count == 2) &&
+				(lastBlock.Body[0] is ILLabel) &&
+				(lastBlock.Body[1] is ILExpression) &&
+				(((ILExpression)lastBlock.Body[1]).Code == ILCode.LoopOrSwitchBreak)
+			) {
+				// This is a delegating default case. Ensure the target is another case in this switch block.
+				var targetCase = swtch.CaseBlocks.FirstOrDefault(
+					(cse) => (
+						(cse.EntryGoto.Operand == defaultCase.EntryGoto.Operand) &&
+						(cse != defaultCase)
+					)
+				);
+
+				if (targetCase != null) {
+					// The target is another case in this switch block, so fold the current case into that one.
+					swtch.CaseBlocks.Remove(defaultCase);
+					targetCase.IsDefault = true;
+				}
+			}
+		}
+
+		static bool HasSingleEdgeEnteringBlock (ControlFlowNode node)
 		{
 			return node.Incoming.Count(edge => !node.Dominates(edge.Source)) == 1;
 		}
