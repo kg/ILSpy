@@ -89,13 +89,13 @@ namespace ICSharpCode.Decompiler.ILAst
 			this.Body = body;
 		}
 
-        protected override void AccumulateChildrenRecursiveInto<T> (List<T> list, Func<T, bool> predicate) {
-            if (this.EntryGoto != null)
-                this.EntryGoto.AccumulateSelfAndChildrenRecursive(list, predicate);
+		protected override void AccumulateChildrenRecursiveInto<T> (List<T> list, Func<T, bool> predicate) {
+			if (this.EntryGoto != null)
+				this.EntryGoto.AccumulateSelfAndChildrenRecursive(list, predicate);
 
-            foreach (ILNode child in this.Body)
-                child.AccumulateSelfAndChildrenRecursive(list, predicate);
-        }
+			foreach (ILNode child in this.Body)
+				child.AccumulateSelfAndChildrenRecursive(list, predicate);
+		}
 		
 		public override IEnumerable<ILNode> GetChildren()
 		{
@@ -121,10 +121,10 @@ namespace ICSharpCode.Decompiler.ILAst
 		/// <remarks> Body has to start with a label and end with unconditional control flow </remarks>
 		public List<ILNode> Body = new List<ILNode>();
 
-        protected override void AccumulateChildrenRecursiveInto<T> (List<T> list, Func<T, bool> predicate) {
-            foreach (var child in this.Body)
-                child.AccumulateSelfAndChildrenRecursive(list, predicate);
-        }
+		protected override void AccumulateChildrenRecursiveInto<T> (List<T> list, Func<T, bool> predicate) {
+			foreach (var child in this.Body)
+				child.AccumulateSelfAndChildrenRecursive(list, predicate);
+		}
 
 		public override IEnumerable<ILNode> GetChildren()
 		{
@@ -173,10 +173,10 @@ namespace ICSharpCode.Decompiler.ILAst
 			}
 		}
 		
-		public ILBlock          TryBlock;
+		public ILBlock		  TryBlock;
 		public List<CatchBlock> CatchBlocks;
-		public ILBlock          FinallyBlock;
-		public ILBlock          FaultBlock;
+		public ILBlock		  FinallyBlock;
+		public ILBlock		  FaultBlock;
 		
 		public override IEnumerable<ILNode> GetChildren()
 		{
@@ -369,10 +369,10 @@ namespace ICSharpCode.Decompiler.ILAst
 			return null;
 		}
 
-        protected override void AccumulateChildrenRecursiveInto<T> (List<T> list, Func<T, bool> predicate) {
-            foreach (var child in Arguments)
-                child.AccumulateSelfAndChildrenRecursive(list, predicate);
-        }
+		protected override void AccumulateChildrenRecursiveInto<T> (List<T> list, Func<T, bool> predicate) {
+			foreach (var child in Arguments)
+				child.AccumulateSelfAndChildrenRecursive(list, predicate);
+		}
 		
 		public override IEnumerable<ILNode> GetChildren()
 		{
@@ -480,7 +480,7 @@ namespace ICSharpCode.Decompiler.ILAst
 	public class ILWhileLoop : ILNode
 	{
 		public ILExpression Condition;
-		public ILBlock      BodyBlock;
+		public ILBlock	  BodyBlock;
 		
 		public override IEnumerable<ILNode> GetChildren()
 		{
@@ -543,17 +543,34 @@ namespace ICSharpCode.Decompiler.ILAst
 	{
 		public class CaseBlock: ILBlock
 		{
-			public List<int> Values;  // null for the default case
+			internal bool _IsDefault;
+			public List<int> Values;
+
+			public bool IsDefault {
+				get {
+					return _IsDefault || (Values == null) || (Values.Count == 0);
+				}
+				set {
+					if ((Values == null) || (Values.Count == 0)) {
+						if (!value)
+							throw new Exception("This case has no values so it must be default");
+					}
+
+					_IsDefault = value;
+				}
+			}
 			
 			public override void WriteTo(ITextOutput output)
 			{
+				if (IsDefault)
+					output.WriteLine("default:");
+
 				if (this.Values != null) {
 					foreach (int i in this.Values) {
 						output.WriteLine("case {0}:", i);
 					}
-				} else {
-					output.WriteLine("default:");
 				}
+
 				output.Indent();
 				base.WriteTo(output);
 				output.Unindent();
@@ -589,7 +606,7 @@ namespace ICSharpCode.Decompiler.ILAst
 	public class ILFixedStatement : ILNode
 	{
 		public List<ILExpression> Initializers = new List<ILExpression>();
-		public ILBlock      BodyBlock;
+		public ILBlock	  BodyBlock;
 		
 		public override IEnumerable<ILNode> GetChildren()
 		{
