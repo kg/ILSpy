@@ -1128,6 +1128,17 @@ namespace ICSharpCode.Decompiler.ILAst
 		
 		public static int GetInformationAmount(TypeReference type)
 		{
+            if (type is GenericParameter) {
+                var gp = (GenericParameter)type;
+
+                // If the generic parameter might be a struct, we must assume it to have less
+                //  information than Object.
+                if (gp.HasReferenceTypeConstraint)
+                    return 100;
+                else
+                    return 99;
+            }
+
 			type = GetEnumUnderlyingType(type) ?? type;
 			if (type == null)
 				return 0;
