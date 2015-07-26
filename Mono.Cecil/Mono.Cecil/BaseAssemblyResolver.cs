@@ -90,19 +90,27 @@ namespace Mono.Cecil {
 
 		public void AddSearchDirectory (string directory)
 		{
-			directories.Add (directory);
+            lock (directories) {
+                if (directories.Contains(directory))
+                    return;
+
+			    directories.Add (directory);
+            }
 		}
 
 		public void RemoveSearchDirectory (string directory)
 		{
-			directories.Remove (directory);
+            lock (directories)
+    			directories.Remove (directory);
 		}
 
 		public string [] GetSearchDirectories ()
 		{
-			var directories = new string [this.directories.size];
-			Array.Copy (this.directories.items, directories, directories.Length);
-			return directories;
+            lock (directories) {
+    			var directories = new string [this.directories.size];
+    			Array.Copy (this.directories.items, directories, directories.Length);
+    			return directories;
+            }
 		}
 
 		public virtual AssemblyDefinition Resolve (string fullName)
@@ -185,15 +193,23 @@ namespace Mono.Cecil {
 		AssemblyDefinition SearchDirectory (AssemblyNameReference name, IEnumerable<string> directories, ReaderParameters parameters)
 		{
 			var extensions = new [] { ".exe", ".dll" };
+            string foundFile = null;
+
+            lock (directories)
 			foreach (var directory in directories) {
 				foreach (var extension in extensions) {
-					string file = Path.Combine (directory, name.Name + extension);
-					if (File.Exists (file))
-						return GetAssembly (file, parameters);
+					string file = Path.Combine(directory, name.Name + extension);
+                    if (File.Exists(file)) {
+                        foundFile = file;
+                        break;
+                    }
 				}
 			}
 
-			return null;
+            if (foundFile != null)
+                return GetAssembly(foundFile, parameters);
+            else
+    			return null;
 		}
 
 		static bool IsZero (Version version)
