@@ -107,9 +107,9 @@ namespace Mono.Cecil {
 		public string [] GetSearchDirectories ()
 		{
             lock (directories) {
-    			var directories = new string [this.directories.size];
-    			Array.Copy (this.directories.items, directories, directories.Length);
-    			return directories;
+    			var _directories = new string [this.directories.size];
+    			Array.Copy (this.directories.items, _directories, _directories.Length);
+    			return _directories;
             }
 		}
 
