@@ -333,6 +333,21 @@ namespace ICSharpCode.Decompiler
 				}
 			}
 		}
+
+		bool skipLdvirtftnArgumentRemove = false;
+
+		public bool SkipLdvirtftnArgumentRemove
+		{
+			get { return skipLdvirtftnArgumentRemove; }
+			set
+            {
+				if (skipLdvirtftnArgumentRemove != value)
+				{
+					skipLdvirtftnArgumentRemove = value;
+					OnPropertyChanged("SkipLdvirtftnArgumentRemove");
+				}
+			}
+		}
 		
 		public event PropertyChangedEventHandler PropertyChanged;
 		

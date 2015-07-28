@@ -445,7 +445,8 @@ namespace ICSharpCode.Decompiler.ILAst
 				if (expr.Arguments[0].Match(ILCode.Ldloc, out target)
 				    && expr.Arguments[1].Code == ILCode.Ldvirtftn
 				    && expr.Arguments[1].Arguments.Count == 1
-				    && expr.Arguments[1].Arguments[0].MatchLdloc(target))
+				    && expr.Arguments[1].Arguments[0].MatchLdloc(target)
+				    && !context.Settings.SkipLdvirtftnArgumentRemove)
 				{
 					// Remove the 'target' argument from the ldvirtftn instruction.
 					// It's not needed in the translation to C#, and needs to be eliminated so that the target expression
