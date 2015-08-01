@@ -298,6 +298,21 @@ namespace ICSharpCode.Decompiler
 			}
 		}
 		
+		bool makeCompoundAssignmentExpressions = true;
+		
+		/// <summary>
+		/// Gets/Sets whether to generate compound assignment expressions such as a = b = c = 1;
+		/// </summary>
+		public bool MakeCompoundAssignmentExpressions {
+			get { return makeCompoundAssignmentExpressions; }
+			set {
+				if (makeCompoundAssignmentExpressions != value) {
+					makeCompoundAssignmentExpressions = value;
+					OnPropertyChanged("MakeCompoundAssignmentExpressions");
+				}
+			}
+		}
+		
 		bool alwaysGenerateExceptionVariableForCatchBlocks = false;
 		
 		/// <summary>
