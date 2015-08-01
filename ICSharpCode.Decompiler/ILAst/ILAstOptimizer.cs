@@ -177,7 +177,9 @@ namespace ICSharpCode.Decompiler.ILAst
 					if (context.Settings.MakeAssignmentExpressions) {
 						modified |= block.RunOptimization(MakeAssignmentExpression);
 					}
-					modified |= block.RunOptimization(MakeCompoundAssignments);
+					if (context.Settings.MakeCompoundAssignmentExpressions) {
+    					modified |= block.RunOptimization(MakeCompoundAssignments);
+                    }
 					
 					if (abortBeforeStep == ILAstOptimizationStep.IntroducePostIncrement) return;
 					if (context.Settings.IntroduceIncrementAndDecrement) {
