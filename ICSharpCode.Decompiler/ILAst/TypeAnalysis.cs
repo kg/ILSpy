@@ -318,8 +318,6 @@ namespace ICSharpCode.Decompiler.ILAst
 				case ILCode.CallvirtGetter:
 				case ILCode.CallSetter:
 				case ILCode.CallvirtSetter:
-                case ILCode.GetCallSiteBinder:
-                case ILCode.InvokeCallSiteTarget:
 					{
 						MethodReference method = (MethodReference)expr.Operand;
 						if (forceInferChildren) {
@@ -362,7 +360,6 @@ namespace ICSharpCode.Decompiler.ILAst
 					}
 					return GetFieldType((FieldReference)expr.Operand);
 				case ILCode.Ldsfld:
-                case ILCode.GetCallSite:
 					return GetFieldType((FieldReference)expr.Operand);
 				case ILCode.Ldflda:
 					if (forceInferChildren) {
@@ -378,7 +375,6 @@ namespace ICSharpCode.Decompiler.ILAst
 					}
 					return GetFieldType((FieldReference)expr.Operand);
 				case ILCode.Stsfld:
-                case ILCode.CreateCallSite:
 					if (forceInferChildren)
 						InferTypeForExpression(expr.Arguments[0], GetFieldType((FieldReference)expr.Operand));
 					return GetFieldType((FieldReference)expr.Operand);
