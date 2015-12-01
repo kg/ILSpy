@@ -56,7 +56,6 @@ namespace ICSharpCode.Decompiler.ILAst
 		IntroducePostIncrement,
 		InlineExpressionTreeParameterDeclarations,
 		InlineVariables2,
-        FindDynamicCallSites,
 		FindLoops,
 		FindConditions,
 		FlattenNestedMovableBlocks,
@@ -195,17 +194,7 @@ namespace ICSharpCode.Decompiler.ILAst
 				} while(modified);
 			}
 			
-            if (abortBeforeStep == ILAstOptimizationStep.FindDynamicCallSites) return;
-            foreach (ILBlock block in method.GetSelfAndChildrenRecursive<ILBlock>()) {
-                var dcs = new DynamicCallSites(context);
-
-                bool modified;
-                do {
-                    modified = block.RunOptimization(dcs.AnalyzeInstructions);
-                } while (modified);
-            }
-
-            if (abortBeforeStep == ILAstOptimizationStep.FindLoops) return;
+			if (abortBeforeStep == ILAstOptimizationStep.FindLoops) return;
 			foreach(ILBlock block in method.GetSelfAndChildrenRecursive<ILBlock>()) {
 				new LoopsAndConditions(context).FindLoops(block);
 			}
