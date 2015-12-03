@@ -125,8 +125,9 @@ namespace ICSharpCode.Decompiler.ILAst
 			// Types are needed for the ternary operator optimization
 			TypeAnalysis.Run(context, method);
 			
-			if (abortBeforeStep == ILAstOptimizationStep.HandlePointerArithmetic) return;
-			HandlePointerArithmetic(method);
+			// We don't need any pointer optimiztion for JSIL transaltion.
+			//if (abortBeforeStep == ILAstOptimizationStep.HandlePointerArithmetic) return;
+			//HandlePointerArithmetic(method);
 
 			foreach(ILBlock block in method.GetSelfAndChildrenRecursive<ILBlock>()) {
 				bool modified;
